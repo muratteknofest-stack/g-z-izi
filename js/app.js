@@ -1,5 +1,6 @@
 /* ============================================
    GÖZ-İZİ - Ana Uygulama (app.js)
+   Raspberry Pi NoIR + IR LED Edition
    Mobil ve masaüstü uyumlu
    ============================================ */
 
@@ -14,7 +15,8 @@ const App = {
     testResults: {},
     webgazerReady: false,
     gazeData: [],
-    isMobile: false
+    isMobile: false,
+    gazeActive: false
   },
 
   init() {
@@ -40,10 +42,12 @@ const App = {
     // Handle visibility change (phone screen off/on)
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && Tests.isRunning) {
-        // Pause test if screen goes off
         Tests.isRunning = false;
       }
     });
+
+    // Gaze activity indicator
+    this._gazeTimeout = null;
   },
 
   detectMobile() {
@@ -52,7 +56,6 @@ const App = {
   },
 
   handleOrientation() {
-    // Handled by CSS media queries, this just forces layout recalc
     if (Tests.isRunning && Tests.canvas) {
       Tests.resizeCanvas();
     }
@@ -63,26 +66,38 @@ const App = {
     const screen = document.getElementById(screenId);
     if (screen) {
       screen.classList.add('active');
-      // Scroll to top on mobile
       window.scrollTo(0, 0);
     }
+  },
+
+  showLoading(text) {
+    const overlay = document.getElementById('loadingOverlay');
+    const textEl = document.getElementById('loadingText');
+    if (text) textEl.textContent = text;
+    overlay.style.display = 'flex';
+  },
+
+  hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
   },
 
   showToast(message, type = 'info') {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
 
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
+    toast.innerHTML = `<span>${icons[type] || ''} ${message}</span>`;
     document.body.appendChild(toast);
 
+    // Animate in
+    requestAnimationFrame(() => toast.classList.add('show'));
+
     setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 400);
+    }, 3500);
   },
 
   async startCalibration() {
@@ -93,6 +108,7 @@ const App = {
 
     if (!name) {
       this.showToast('Lütfen çocuğun adını girin.', 'error');
+      document.getElementById('childName').focus();
       return;
     }
     if (!age) {
@@ -105,52 +121,106 @@ const App = {
     this.state.childGrade = grade || '-';
     this.state.testerName = tester || 'Belirtilmedi';
 
-    this.showScreen('calibrationScreen');
-
-    // Try fullscreen on mobile for better experience
-    this.requestFullscreen();
+    // Show loading while WebGazer initializes
+    this.showLoading('NoIR kamera başlatılıyor...');
 
     try {
       await this.initWebGazer();
+      this.hideLoading();
+      this.showScreen('calibrationScreen');
+      this.requestFullscreen();
       Calibration.start();
     } catch (err) {
+      this.hideLoading();
       console.error('WebGazer başlatılamadı:', err);
-      this.showToast('Kamera erişimi sağlanamadı. Lütfen kamera iznini verin.', 'error');
-      setTimeout(() => this.showScreen('infoScreen'), 2000);
+      this.showToast('Kamera erişimi sağlanamadı. Lütfen kamera iznini verin ve sayfayı yenileyin.', 'error');
     }
   },
 
   async initWebGazer() {
     if (this.state.webgazerReady) return;
 
-    await webgazer
-      .setRegression('ridge')
-      .setGazeListener((data, timestamp) => {
-        if (data == null) return;
-        if (Tests.isRunning) {
-          Tests.recordGaze(data.x, data.y, timestamp);
-        }
-      })
-      .begin();
+    try {
+      await webgazer
+        .setRegression('ridge')
+        .setGazeListener((data, timestamp) => {
+          if (data == null) {
+            this.state.gazeActive = false;
+            return;
+          }
+          this.state.gazeActive = true;
 
-    webgazer.showVideoPreview(false)
-      .showPredictionPoints(false)
-      .showFaceOverlay(false)
-      .showFaceFeedbackBox(false);
+          // Update gaze indicator
+          this.updateGazeIndicator(true);
 
-    this.state.webgazerReady = true;
+          if (Tests.isRunning) {
+            Tests.recordGaze(data.x, data.y, timestamp);
+          }
+        })
+        .begin();
 
-    // Show camera preview
-    const video = webgazer.getVideoElementCanvas();
-    if (video) {
-      const preview = document.getElementById('cameraPreview');
-      const cameraVideo = document.getElementById('cameraVideo');
+      webgazer.showVideoPreview(false)
+        .showPredictionPoints(false)
+        .showFaceOverlay(false)
+        .showFaceFeedbackBox(false);
 
-      const webgazerVideo = document.getElementById('webgazerVideoFeed');
-      if (webgazerVideo && webgazerVideo.srcObject) {
-        cameraVideo.srcObject = webgazerVideo.srcObject;
-      }
+      this.state.webgazerReady = true;
+
+      // Show camera preview using the stream from webgazer
+      this.setupCameraPreview();
+
+    } catch (err) {
+      throw new Error('Kamera erişimi reddedildi: ' + err.message);
+    }
+  },
+
+  setupCameraPreview() {
+    const cameraVideo = document.getElementById('cameraVideo');
+    const preview = document.getElementById('cameraPreview');
+
+    // Try to get the stream from webgazer's video element
+    const webgazerVideo = document.getElementById('webgazerVideoFeed');
+    if (webgazerVideo && webgazerVideo.srcObject) {
+      cameraVideo.srcObject = webgazerVideo.srcObject;
       preview.classList.remove('hidden');
+      return;
+    }
+
+    // Fallback: try to find any video element created by webgazer
+    const videos = document.querySelectorAll('video');
+    for (const v of videos) {
+      if (v.id !== 'cameraVideo' && v.srcObject) {
+        cameraVideo.srcObject = v.srcObject;
+        preview.classList.remove('hidden');
+        return;
+      }
+    }
+
+    // Last fallback: direct getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          cameraVideo.srcObject = stream;
+          preview.classList.remove('hidden');
+        })
+        .catch(() => {
+          console.warn('Camera preview unavailable');
+        });
+    }
+  },
+
+  updateGazeIndicator(active) {
+    const dot = document.getElementById('hudGazeDot');
+    if (!dot) return;
+
+    if (active) {
+      dot.classList.add('active');
+      clearTimeout(this._gazeTimeout);
+      this._gazeTimeout = setTimeout(() => {
+        dot.classList.remove('active');
+      }, 500);
+    } else {
+      dot.classList.remove('active');
     }
   },
 
@@ -166,10 +236,12 @@ const App = {
   },
 
   exitFullscreen() {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => { });
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => { });
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
     }
   },
 
@@ -203,7 +275,8 @@ const App = {
       document.getElementById('showResultsBtn').style.display = '';
       this.showToast('Tüm testler tamamlandı! Sonuçları görebilirsiniz.', 'success');
     } else {
-      this.showToast(`Test tamamlandı! (${this.state.completedTests.length}/3)`, 'success');
+      const remaining = 3 - this.state.completedTests.length;
+      this.showToast(`Test tamamlandı! ${remaining} test kaldı.`, 'success');
     }
   },
 
@@ -225,9 +298,12 @@ const App = {
     document.getElementById('testerName').value = '';
 
     ['testCard1', 'testCard2', 'testCard3'].forEach(id => {
-      document.getElementById(id).classList.remove('completed');
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('completed');
     });
-    document.getElementById('showResultsBtn').style.display = 'none';
+
+    const btn = document.getElementById('showResultsBtn');
+    if (btn) btn.style.display = 'none';
 
     this.exitFullscreen();
     this.unlockBodyScroll();

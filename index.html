@@ -18,6 +18,13 @@
 
 <body>
 
+  <!-- ════════════ LOADING OVERLAY ════════════ -->
+  <div class="loading-overlay" id="loadingOverlay" style="display:none">
+    <div class="loading-spinner"></div>
+    <p class="loading-text" id="loadingText">Kamera başlatılıyor...</p>
+    <p class="loading-sub">Lütfen kamera iznini onaylayın</p>
+  </div>
+
   <!-- ════════════ SCREEN 1: WELCOME ════════════ -->
   <div id="welcomeScreen" class="screen active">
     <div class="welcome-container">
@@ -42,11 +49,11 @@
 
       <h1 class="app-title">Göz-İzi</h1>
       <p class="app-subtitle">
-        Raspberry Pi NoIR kamera ve kızılötesi LED aydınlatma sistemi ile çocuklarda göz bebeği takibi yaparak odaklanma
-        ve dikkat bozukluklarının erken tespitine yardımcı olan, donanım + yapay zeka destekli tarama sistemi.
+        Raspberry Pi NoIR kamera ve kızılötesi LED aydınlatma sistemi ile çocuklarda göz bebeği takibi yaparak
+        odaklanma ve dikkat bozukluklarının erken tespitine yardımcı olan, donanım + yapay zeka destekli tarama sistemi.
       </p>
 
-      <div class="features-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 600px;">
+      <div class="features-grid features-grid-2x2">
         <div class="feature-card">
           <span class="feature-icon">🔧</span>
           <div class="feature-title">Raspberry Pi</div>
@@ -60,7 +67,7 @@
         <div class="feature-card">
           <span class="feature-icon">🧠</span>
           <div class="feature-title">Yapay Zeka</div>
-          <div class="feature-desc">Görüntü işleme ile gerçek zamanlı göz bebeği analizi</div>
+          <div class="feature-desc">Ridge Regression ile gerçek zamanlı göz bebeği analizi</div>
         </div>
         <div class="feature-card">
           <span class="feature-icon">📊</span>
@@ -73,6 +80,8 @@
         <span class="btn-icon">🚀</span>
         Taramaya Başla
       </button>
+
+      <div class="version-badge">v1.0 • Pi NoIR Edition</div>
     </div>
   </div>
 
@@ -94,14 +103,16 @@
         <p class="section-desc">Test sonuçlarını kişiselleştirmek için lütfen aşağıdaki bilgileri doldurun.</p>
 
         <div class="form-group">
-          <label class="form-label" for="childName">Çocuğun Adı</label>
-          <input type="text" id="childName" class="form-input" placeholder="Ör: Ali, Ayşe...">
+          <label class="form-label" for="childName">Çocuğun Adı *</label>
+          <input type="text" id="childName" class="form-input" placeholder="Ör: Ali, Ayşe..." autocomplete="off">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="childAge">Yaş</label>
+          <label class="form-label" for="childAge">Yaş *</label>
           <select id="childAge" class="form-select">
             <option value="">Seçiniz</option>
+            <option value="4">4 yaş</option>
+            <option value="5">5 yaş</option>
             <option value="6">6 yaş</option>
             <option value="7">7 yaş</option>
             <option value="8">8 yaş</option>
@@ -118,6 +129,7 @@
           <label class="form-label" for="childGrade">Sınıf</label>
           <select id="childGrade" class="form-select">
             <option value="">Seçiniz</option>
+            <option value="Anaokulu">Anaokulu</option>
             <option value="1">1. Sınıf</option>
             <option value="2">2. Sınıf</option>
             <option value="3">3. Sınıf</option>
@@ -131,7 +143,7 @@
 
         <div class="form-group">
           <label class="form-label" for="testerName">Test Eden Kişi</label>
-          <input type="text" id="testerName" class="form-input" placeholder="Öğretmen veya veli adı">
+          <input type="text" id="testerName" class="form-input" placeholder="Öğretmen veya veli adı" autocomplete="off">
         </div>
       </div>
 
@@ -151,8 +163,8 @@
     <div class="calibration-container" id="calibrationArea">
       <div class="calibration-instructions" id="calibInstructions">
         <h2>🎯 Kalibrasyon</h2>
-        <p>Ekranda beliren mavi noktalara sırayla tıklayın.<br>Her noktaya tıklarken o noktaya bakın. Kamera sizi
-          izliyor.</p>
+        <p>Ekranda beliren mavi noktalara sırayla tıklayın (veya dokunun).<br>Her noktaya tıklarken o noktaya bakın.
+          Kamera sizi izliyor.</p>
       </div>
       <div class="calibration-progress">
         <div class="progress-bar">
@@ -230,6 +242,10 @@
           <span class="hud-label">Süre:</span>
           <span class="hud-value" id="hudTimer">00:30</span>
         </div>
+        <div class="hud-item hud-gaze-indicator">
+          <span class="hud-label">Göz:</span>
+          <span class="hud-dot" id="hudGazeDot"></span>
+        </div>
       </div>
       <div class="test-timer-bar" id="timerBar" style="width: 100%"></div>
     </div>
@@ -304,10 +320,10 @@
 
   <!-- ════════════ CAMERA PREVIEW ════════════ -->
   <div class="camera-preview hidden" id="cameraPreview">
-    <video id="cameraVideo" autoplay playsinline></video>
+    <video id="cameraVideo" autoplay playsinline muted></video>
     <div class="camera-label">
       <span class="rec-dot"></span>
-      KAMERA
+      NoIR KAMERA
     </div>
   </div>
 

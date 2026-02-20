@@ -1,5 +1,6 @@
 /* ============================================
    GÖZ-İZİ - Kalibrasyon Modülü (calibration.js)
+   Dokunmatik ve fare desteği 
    ============================================ */
 
 const Calibration = {
@@ -50,7 +51,15 @@ const Calibration = {
             point.style.top = pos.y + '%';
             point.dataset.index = index;
 
-            point.addEventListener('click', (e) => this.onPointClick(e, index, point));
+            // Support both click AND touch
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.onPointClick(e, index, point);
+            };
+
+            point.addEventListener('click', handler);
+            point.addEventListener('touchend', handler, { passive: false });
 
             area.appendChild(point);
             this.points.push(point);
@@ -59,31 +68,49 @@ const Calibration = {
     },
 
     onPointClick(event, index, point) {
+        // Prevent double-firing from touch + click
+        if (this.clickCounts[index] >= this.requiredClicksPerPoint) return;
+
         this.clickCounts[index] = (this.clickCounts[index] || 0) + 1;
         this.totalClicks++;
 
-        // Visual feedback
-        point.style.transform = `translate(-50%, -50%) scale(${0.9 - this.clickCounts[index] * 0.05})`;
-        point.style.opacity = 1 - (this.clickCounts[index] / this.requiredClicksPerPoint) * 0.3;
+        // Visual feedback - pulse animation
+        point.classList.add('pulse');
+        setTimeout(() => point.classList.remove('pulse'), 200);
+
+        // Shrink as clicks accumulate
+        const progress = this.clickCounts[index] / this.requiredClicksPerPoint;
+        const scale = 1 - progress * 0.3;
+        point.style.transform = `translate(-50%, -50%) scale(${scale})`;
 
         if (this.clickCounts[index] >= this.requiredClicksPerPoint) {
             point.classList.add('clicked');
             point.style.pointerEvents = 'none';
+
+            // Sound-like visual feedback
+            this.showCheckmark(point);
         }
 
-        // Update progress
+        // Update progress bar
         const completedPoints = Object.values(this.clickCounts)
             .filter(c => c >= this.requiredClicksPerPoint).length;
 
-        const progress = (completedPoints / this.totalPoints) * 100;
-        document.getElementById('calibProgress').style.width = progress + '%';
+        const progressPct = (completedPoints / this.totalPoints) * 100;
+        document.getElementById('calibProgress').style.width = progressPct + '%';
         document.getElementById('calibProgressText').textContent =
             `${completedPoints} / ${this.totalPoints} nokta`;
 
         // Check if all done
         if (completedPoints >= this.totalPoints) {
-            setTimeout(() => this.onComplete(), 500);
+            setTimeout(() => this.onComplete(), 600);
         }
+    },
+
+    showCheckmark(point) {
+        const check = document.createElement('span');
+        check.className = 'calib-check';
+        check.textContent = '✓';
+        point.appendChild(check);
     },
 
     onComplete() {

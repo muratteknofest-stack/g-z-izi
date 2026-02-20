@@ -1,5 +1,6 @@
 /* ============================================
    GÖZ-İZİ - Göz Takip Testleri (tests.js)
+   Event leak fix + mobile improvements
    ============================================ */
 
 const Tests = {
@@ -18,6 +19,11 @@ const Tests = {
 
     // Free gaze scene objects
     sceneObjects: [],
+
+    // Bound event handlers (for proper cleanup)
+    _resizeHandler: null,
+    _touchStartHandler: null,
+    _touchMoveHandler: null,
 
     testConfig: {
         star: {
@@ -63,16 +69,18 @@ const Tests = {
         this.ctx = this.canvas.getContext('2d');
         this.resizeCanvas();
 
-        // Handle resize and orientation change
+        // Handle resize and orientation change — store reference for cleanup
         this._resizeHandler = () => this.resizeCanvas();
         window.addEventListener('resize', this._resizeHandler);
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', this._resizeHandler);
         }
 
-        // Prevent touch scrolling on canvas
-        this.canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-        this.canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        // Prevent touch scrolling on canvas — store references for cleanup
+        this._touchStartHandler = (e) => e.preventDefault();
+        this._touchMoveHandler = (e) => e.preventDefault();
+        this.canvas.addEventListener('touchstart', this._touchStartHandler, { passive: false });
+        this.canvas.addEventListener('touchmove', this._touchMoveHandler, { passive: false });
 
         // Countdown then start
         this.showCountdown(() => {
@@ -91,7 +99,6 @@ const Tests = {
 
     resizeCanvas() {
         if (!this.canvas) return;
-        // Use visualViewport on mobile for accurate size (excludes keyboard, URL bar)
         if (window.visualViewport) {
             this.canvas.width = window.visualViewport.width;
             this.canvas.height = window.visualViewport.height;
@@ -129,7 +136,7 @@ const Tests = {
         const h = this.canvas.height;
         const config = this.testConfig[type];
 
-        // Scale target size based on screen (bigger on small screens for visibility)
+        // Scale target size based on screen
         const screenScale = Math.min(w, h) / 600;
         const baseSize = type === 'star' ? 35 : 28;
         const scaledSize = Math.max(baseSize, baseSize * screenScale);
@@ -151,11 +158,9 @@ const Tests = {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        // Scale emoji size based on screen dimension
         const scale = Math.min(w, h) / 700;
         const sz = (base) => Math.max(30, Math.round(base * scale));
 
-        // Create scene with various interesting objects
         this.sceneObjects = [
             { emoji: '🏠', x: w * 0.15, y: h * 0.25, size: sz(60) },
             { emoji: '🌳', x: w * 0.35, y: h * 0.7, size: sz(55) },
@@ -194,6 +199,16 @@ const Tests = {
         // Timer bar
         const progress = remaining / this.duration;
         document.getElementById('timerBar').style.width = (progress * 100) + '%';
+
+        // Timer bar color change when time is low
+        const timerBar = document.getElementById('timerBar');
+        if (remaining < 5) {
+            timerBar.style.background = 'var(--accent-red)';
+        } else if (remaining < 10) {
+            timerBar.style.background = 'var(--accent-yellow)';
+        } else {
+            timerBar.style.background = '';
+        }
 
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -257,11 +272,9 @@ const Tests = {
         const margin = 80;
 
         if (this.currentTest === 'ball') {
-            // Ball has more erratic movement
             t.vx += (Math.random() - 0.5) * 0.5;
             t.vy += (Math.random() - 0.5) * 0.5;
 
-            // Clamp speed
             const maxSpeed = 5;
             const speed = Math.sqrt(t.vx * t.vx + t.vy * t.vy);
             if (speed > maxSpeed) {
@@ -294,7 +307,6 @@ const Tests = {
         const time = performance.now() / 1000;
 
         if (this.currentTest === 'star') {
-            // Draw glowing star
             ctx.save();
             ctx.translate(t.x, t.y);
             ctx.rotate(time * 0.5);
@@ -335,7 +347,6 @@ const Tests = {
             }
 
         } else if (this.currentTest === 'ball') {
-            // Draw soccer ball
             ctx.save();
 
             // Shadow
@@ -400,17 +411,14 @@ const Tests = {
         const ctx = this.ctx;
         const time = performance.now() / 1000;
 
-        // Draw all scene objects
         this.sceneObjects.forEach((obj, i) => {
             ctx.save();
             ctx.font = `${obj.size}px serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Subtle float animation
             const floatY = Math.sin(time + i * 0.7) * 5;
 
-            // Subtle glow behind
             ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
             ctx.shadowBlur = 15;
 
@@ -418,7 +426,7 @@ const Tests = {
             ctx.restore();
         });
 
-        // Draw instruction text
+        // Instruction
         ctx.save();
         ctx.font = '16px Inter, sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
@@ -426,7 +434,7 @@ const Tests = {
         ctx.fillText('Resimlere serbestçe bakabilirsiniz', this.canvas.width / 2, this.canvas.height - 40);
         ctx.restore();
 
-        // For free gaze, target is the entire screen / no specific target
+        // For free gaze, log center as "target"
         this.targetLog.push({
             x: this.canvas.width / 2,
             y: this.canvas.height / 2,
@@ -436,15 +444,35 @@ const Tests = {
 
     endTest() {
         this.isRunning = false;
-        cancelAnimationFrame(this.animationId);
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
 
-        // Remove resize listeners
+        // Remove resize listeners (proper cleanup — no leaks)
         if (this._resizeHandler) {
             window.removeEventListener('resize', this._resizeHandler);
             if (window.visualViewport) {
                 window.visualViewport.removeEventListener('resize', this._resizeHandler);
             }
+            this._resizeHandler = null;
         }
+
+        // Remove touch listeners (proper cleanup — no leaks)
+        if (this.canvas) {
+            if (this._touchStartHandler) {
+                this.canvas.removeEventListener('touchstart', this._touchStartHandler);
+                this._touchStartHandler = null;
+            }
+            if (this._touchMoveHandler) {
+                this.canvas.removeEventListener('touchmove', this._touchMoveHandler);
+                this._touchMoveHandler = null;
+            }
+        }
+
+        // Reset timer bar color
+        const timerBar = document.getElementById('timerBar');
+        if (timerBar) timerBar.style.background = '';
 
         // Store results
         App.state.testResults[this.currentTest] = {
