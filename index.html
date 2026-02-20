@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description"
+    content="Göz-İzi (Eye-Track): Webcam tabanlı göz takibi ile otizm ve öğrenme güçlüğü için erken tanı asistanı. TEKNOFEST 2026">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>Göz-İzi | Erken Tanı Asistanı</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>👁️</text></svg>">
+</head>
+
+<body>
+
+  <!-- ════════════ SCREEN 1: WELCOME ════════════ -->
+  <div id="welcomeScreen" class="screen active">
+    <div class="welcome-container">
+      <div class="teknofest-badge">
+        <span class="badge-dot"></span>
+        TEKNOFEST 2026 • Sağlık ve İyi Yaşam Teknolojileri
+      </div>
+
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg class="eye-svg" viewBox="0 0 120 120">
+            <ellipse class="eye-outer" cx="60" cy="60" rx="54" ry="32" />
+            <circle class="eye-iris" cx="60" cy="60" r="20" />
+            <circle class="eye-pupil" cx="60" cy="60" r="10" />
+            <circle class="eye-glint" cx="67" cy="53" r="4" />
+            <path class="eye-outer" d="M6 60 Q60 20 114 60" fill="none" />
+            <path class="eye-outer" d="M6 60 Q60 100 114 60" fill="none" />
+          </svg>
+          <div class="eye-scan-line"></div>
+        </div>
+      </div>
+
+      <h1 class="app-title">Göz-İzi</h1>
+      <p class="app-subtitle">
+        Webcam tabanlı göz takibi teknolojisi ile çocuklarda odaklanma ve dikkat bozukluklarının erken tespitine
+        yardımcı olan, yapay zeka destekli tarama aracı.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-icon">📹</span>
+          <div class="feature-title">Webcam Tabanlı</div>
+          <div class="feature-desc">Pahalı cihaz gerektirmez, standart kamera yeterli</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🧠</span>
+          <div class="feature-title">Yapay Zeka</div>
+          <div class="feature-desc">Görüntü işleme ile göz bebeği takibi</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📊</span>
+          <div class="feature-title">Isı Haritası</div>
+          <div class="feature-desc">Profesyonel analiz ve detaylı raporlama</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg" onclick="App.showScreen('infoScreen')">
+        <span class="btn-icon">🚀</span>
+        Taramaya Başla
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN 2: CHILD INFO ════════════ -->
+  <div id="infoScreen" class="screen">
+    <div class="info-container">
+      <div class="steps">
+        <div class="step active"><span class="step-num">1</span><span class="step-label">Bilgi</span></div>
+        <div class="step-line"></div>
+        <div class="step"><span class="step-num">2</span><span class="step-label">Kalibrasyon</span></div>
+        <div class="step-line"></div>
+        <div class="step"><span class="step-num">3</span><span class="step-label">Testler</span></div>
+        <div class="step-line"></div>
+        <div class="step"><span class="step-num">4</span><span class="step-label">Sonuç</span></div>
+      </div>
+
+      <div class="glass-card">
+        <h2 class="section-title">Çocuk Bilgileri</h2>
+        <p class="section-desc">Test sonuçlarını kişiselleştirmek için lütfen aşağıdaki bilgileri doldurun.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="childName">Çocuğun Adı</label>
+          <input type="text" id="childName" class="form-input" placeholder="Ör: Ali, Ayşe...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="childAge">Yaş</label>
+          <select id="childAge" class="form-select">
+            <option value="">Seçiniz</option>
+            <option value="6">6 yaş</option>
+            <option value="7">7 yaş</option>
+            <option value="8">8 yaş</option>
+            <option value="9">9 yaş</option>
+            <option value="10">10 yaş</option>
+            <option value="11">11 yaş</option>
+            <option value="12">12 yaş</option>
+            <option value="13">13 yaş</option>
+            <option value="14">14 yaş</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="childGrade">Sınıf</label>
+          <select id="childGrade" class="form-select">
+            <option value="">Seçiniz</option>
+            <option value="1">1. Sınıf</option>
+            <option value="2">2. Sınıf</option>
+            <option value="3">3. Sınıf</option>
+            <option value="4">4. Sınıf</option>
+            <option value="5">5. Sınıf</option>
+            <option value="6">6. Sınıf</option>
+            <option value="7">7. Sınıf</option>
+            <option value="8">8. Sınıf</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="testerName">Test Eden Kişi</label>
+          <input type="text" id="testerName" class="form-input" placeholder="Öğretmen veya veli adı">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="App.showScreen('welcomeScreen')">
+          ← Geri
+        </button>
+        <button class="btn btn-primary" onclick="App.startCalibration()">
+          Kalibrasyona Geç →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN 3: CALIBRATION ════════════ -->
+  <div id="calibrationScreen" class="screen">
+    <div class="calibration-container" id="calibrationArea">
+      <div class="calibration-instructions" id="calibInstructions">
+        <h2>🎯 Kalibrasyon</h2>
+        <p>Ekranda beliren mavi noktalara sırayla tıklayın.<br>Her noktaya tıklarken o noktaya bakın.</p>
+      </div>
+      <div class="calibration-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="calibProgress" style="width: 0%"></div>
+        </div>
+        <span class="progress-text" id="calibProgressText">0 / 9 nokta</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN 4: TEST SELECTION ════════════ -->
+  <div id="testSelectScreen" class="screen">
+    <div class="test-selection">
+      <div class="steps">
+        <div class="step done"><span class="step-num">✓</span><span class="step-label">Bilgi</span></div>
+        <div class="step-line"></div>
+        <div class="step done"><span class="step-num">✓</span><span class="step-label">Kalibrasyon</span></div>
+        <div class="step-line"></div>
+        <div class="step active"><span class="step-num">3</span><span class="step-label">Testler</span></div>
+        <div class="step-line"></div>
+        <div class="step"><span class="step-num">4</span><span class="step-label">Sonuç</span></div>
+      </div>
+
+      <div class="text-center mb-20">
+        <h2 class="section-title">Göz Takip Testleri</h2>
+        <p class="section-desc">Aşağıdaki testleri sırasıyla tamamlayın. Her test farklı bir göz hareketi becerisini
+          ölçer.</p>
+      </div>
+
+      <div class="test-cards">
+        <div class="test-card" id="testCard1" onclick="Tests.startTest('star')">
+          <span class="checkmark">✓</span>
+          <span class="test-card-icon">⭐</span>
+          <div class="test-card-title">Yıldız Takibi</div>
+          <div class="test-card-desc">Ekranda yavaş hareket eden yıldızı gözlerinizle takip edin</div>
+          <span class="test-card-duration">⏱ 30 saniye</span>
+        </div>
+        <div class="test-card" id="testCard2" onclick="Tests.startTest('ball')">
+          <span class="checkmark">✓</span>
+          <span class="test-card-icon">⚽</span>
+          <div class="test-card-title">Top Takibi</div>
+          <div class="test-card-desc">Hızlı ve rastgele hareket eden topu gözlerinizle izleyin</div>
+          <span class="test-card-duration">⏱ 30 saniye</span>
+        </div>
+        <div class="test-card" id="testCard3" onclick="Tests.startTest('free')">
+          <span class="checkmark">✓</span>
+          <span class="test-card-icon">🔍</span>
+          <div class="test-card-title">Serbest Bakış</div>
+          <div class="test-card-desc">Ekrandaki resimlere istediğiniz gibi bakın, gözleriniz serbest</div>
+          <span class="test-card-duration">⏱ 20 saniye</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="App.showScreen('welcomeScreen')">
+          ← Ana Sayfa
+        </button>
+        <button class="btn btn-primary" id="showResultsBtn" onclick="App.showResults()" style="display:none">
+          Sonuçları Gör →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN 5: TEST RUNNING ════════════ -->
+  <div id="testRunScreen" class="screen">
+    <div class="test-screen" id="testArea">
+      <canvas class="test-canvas" id="testCanvas"></canvas>
+      <div class="test-hud" id="testHud">
+        <div class="hud-item">
+          <span class="hud-label">Test:</span>
+          <span class="hud-value" id="hudTestName">-</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Süre:</span>
+          <span class="hud-value" id="hudTimer">00:30</span>
+        </div>
+      </div>
+      <div class="test-timer-bar" id="timerBar" style="width: 100%"></div>
+    </div>
+  </div>
+
+  <!-- ════════════ COUNTDOWN OVERLAY ════════════ -->
+  <div id="countdownOverlay" class="countdown-overlay hidden">
+    <span class="countdown-number" id="countdownNum">3</span>
+    <span class="countdown-label">Hazırlanın...</span>
+  </div>
+
+  <!-- ════════════ SCREEN 6: RESULTS ════════════ -->
+  <div id="resultsScreen" class="screen">
+    <div class="results-container">
+      <div class="results-header">
+        <span class="result-icon" id="resultIcon">📊</span>
+        <h2 class="section-title">Analiz Sonuçları</h2>
+        <p class="section-desc" id="resultChildName">-</p>
+      </div>
+
+      <div class="score-display" id="scoreDisplay">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="glass-card mb-20">
+        <h3 style="font-family:var(--font-display);margin-bottom:16px;">📈 Detaylı Metrikler</h3>
+        <div class="metrics-grid" id="metricsGrid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <div class="glass-card mb-20">
+        <h3 style="font-family:var(--font-display);margin-bottom:16px;">🗺️ Isı Haritası</h3>
+        <div class="heatmap-container" id="resultsHeatmap">
+          <canvas id="heatmapCanvas"></canvas>
+          <div class="heatmap-legend"></div>
+        </div>
+      </div>
+
+      <div id="assessmentCard">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="btn-group mt-20 no-print">
+        <button class="btn btn-secondary" onclick="App.showScreen('testSelectScreen')">
+          ← Testlere Dön
+        </button>
+        <button class="btn btn-primary" onclick="Report.generate()">
+          📄 Rapor Oluştur
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN 7: REPORT ════════════ -->
+  <div id="reportScreen" class="screen">
+    <div class="report-container" id="reportContent">
+      <!-- Filled by JS -->
+    </div>
+    <div class="btn-group mt-20 no-print">
+      <button class="btn btn-secondary" onclick="App.showScreen('resultsScreen')">
+        ← Sonuçlara Dön
+      </button>
+      <button class="btn btn-primary" onclick="window.print()">
+        🖨️ PDF Olarak Kaydet
+      </button>
+      <button class="btn btn-success" onclick="App.resetAll()">
+        🔄 Yeni Test
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════ CAMERA PREVIEW ════════════ -->
+  <div class="camera-preview hidden" id="cameraPreview">
+    <video id="cameraVideo" autoplay playsinline></video>
+    <div class="camera-label">
+      <span class="rec-dot"></span>
+      KAMERA
+    </div>
+  </div>
+
+  <!-- ════════════ ORIENTATION WARNING (Mobile) ════════════ -->
+  <div class="orientation-warning" id="orientationWarning">
+    <span class="rotate-icon">📱</span>
+    <h3>Cihazınızı Yatay Konuma Getirin</h3>
+    <p>Göz takip testleri yatay (landscape) modda daha doğru çalışır.</p>
+  </div>
+
+  <!-- ════════════ SCRIPTS ════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/webgazer@3.4.0/dist/webgazer.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/calibration.js"></script>
+  <script src="js/tests.js"></script>
+  <script src="js/heatmap.js"></script>
+  <script src="js/analysis.js"></script>
+  <script src="js/report.js"></script>
+</body>
+
+</html>
