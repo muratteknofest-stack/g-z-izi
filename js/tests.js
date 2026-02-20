@@ -87,6 +87,11 @@ const Tests = {
             this.isRunning = true;
             this.startTime = performance.now();
 
+            // Reset cognitive logs for this test
+            if (Cognitive.isReady) {
+                Cognitive.resetLogs();
+            }
+
             if (type === 'free') {
                 this.initFreeScene();
             } else {
@@ -482,6 +487,11 @@ const Tests = {
             canvasWidth: this.canvas.width,
             canvasHeight: this.canvas.height
         };
+
+        // Collect cognitive data for this test
+        if (Cognitive.isReady) {
+            App.state.cognitiveData = Cognitive.getTestResults();
+        }
 
         // Cleanup
         this.gazeLog = [];

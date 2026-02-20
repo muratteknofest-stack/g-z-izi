@@ -142,6 +142,9 @@ const Report = {
           <h3>💡 Öneriler</h3>
           ${this.getRecommendations(r.assessmentLevel)}
         </div>
+
+        <!-- Cognitive Analysis Section -->
+        ${this.getCognitiveReportSection()}
       </div>
 
       <!-- Footer / Disclaimer -->
@@ -229,5 +232,104 @@ const Report = {
       `
     };
     return recs[level] || '';
+  },
+
+  getCognitiveReportSection() {
+    const cog = App.state.cognitiveData;
+    if (!cog) return '';
+
+    const blinkColor = cog.blinkAnalysis.isNormal ? '#22c55e' : '#ef4444';
+    const loadColor = cog.pupillometry.cognitiveLoadAvg > 50 ? '#ef4444' :
+      cog.pupillometry.cognitiveLoadAvg > 25 ? '#f59e0b' : '#22c55e';
+    const avoidColor = cog.headPose.avoidancePercent > 20 ? '#ef4444' :
+      cog.headPose.avoidancePercent > 10 ? '#f59e0b' : '#22c55e';
+
+    return `
+      <div class="report-section">
+        <h3>🧠 Bilişsel Analiz (Cognitive Analysis)</h3>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:14px;">
+          MediaPipe Face Mesh ile gerçek zamanlı yüz landmark analizi kullanılarak elde edilmiştir.
+        </p>
+
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:16px;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0;">Bilişsel Metrik</th>
+              <th style="padding:10px;text-align:center;border-bottom:2px solid #e2e8f0;">Değer</th>
+              <th style="padding:10px;text-align:center;border-bottom:2px solid #e2e8f0;">Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                <strong>👁️ Pupillometri</strong><br>
+                <small style="color:#94a3b8;">Göz bebeği çapı değişimi → Bilişsel yük</small>
+              </td>
+              <td style="padding:10px;text-align:center;font-weight:600;">
+                Ort. %${cog.pupillometry.avgChange} değişim<br>
+                <small>Maks: %${cog.pupillometry.maxDilation}</small>
+              </td>
+              <td style="padding:10px;text-align:center;">
+                <span style="background:${loadColor};color:white;padding:4px 10px;border-radius:12px;font-size:0.72rem;">
+                  Yük: %${cog.pupillometry.cognitiveLoadAvg}
+                </span><br>
+                <small>${cog.pupillometry.cognitiveSpikes} zorluk anı</small>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                <strong>🙈 Göz Kırpma Frekansı</strong><br>
+                <small style="color:#94a3b8;">EAR (Eye Aspect Ratio) tabanlı</small>
+              </td>
+              <td style="padding:10px;text-align:center;font-weight:600;">
+                ${cog.blinkAnalysis.blinkRate} kırpma/dk<br>
+                <small>Toplam: ${cog.blinkAnalysis.totalBlinks}</small>
+              </td>
+              <td style="padding:10px;text-align:center;">
+                <span style="background:${blinkColor};color:white;padding:4px 10px;border-radius:12px;font-size:0.72rem;">
+                  ${cog.blinkAnalysis.isNormal ? 'Normal' : 'Anormal'}
+                </span><br>
+                <small>${cog.blinkAnalysis.assessment}</small>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                <strong>🗣️ Baş Pozisyonu</strong><br>
+                <small style="color:#94a3b8;">Yaw/Pitch/Roll → Kaçınma davranışı</small>
+              </td>
+              <td style="padding:10px;text-align:center;font-weight:600;">
+                ${cog.headPose.avoidanceCount} kaçınma<br>
+                <small>${cog.headPose.avoidanceTime}sn süre</small>
+              </td>
+              <td style="padding:10px;text-align:center;">
+                <span style="background:${avoidColor};color:white;padding:4px 10px;border-radius:12px;font-size:0.72rem;">
+                  %${cog.headPose.avoidancePercent} kaçınma
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px;">
+                <strong>🎭 Duygu Durumu</strong><br>
+                <small style="color:#94a3b8;">Mikro-ifade analizi</small>
+              </td>
+              <td style="padding:10px;text-align:center;font-weight:600;">
+                ${cog.expression.dominant}
+              </td>
+              <td style="padding:10px;text-align:center;">
+                Stres: %${cog.expression.stressLevel}<br>
+                Yorgunluk: %${cog.expression.fatigueLevel}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:0.72rem;color:#94a3b8;font-style:italic;">
+          ℹ️ Pupillometri: Göz bebeği çapındaki %10+ artış bilişsel zorlanma gösterir. 
+          Normal göz kırpma frekansı 8-25/dk arasıdır. Baş kaçınması %20'yi aşarsa 
+          dikkat eksikliği veya otizm spektrumu açısından değerlendirme önerilir.
+          Veri toplama: ${cog.rawDataCounts.pupilSamples} pupil, ${cog.rawDataCounts.expressionSamples} ifade örneği.
+        </p>
+      </div>
+    `;
   }
 };

@@ -247,6 +247,29 @@
           <span class="hud-dot" id="hudGazeDot"></span>
         </div>
       </div>
+      <!-- Cognitive Analysis HUD -->
+      <div class="cognitive-hud" id="cognitiveHud">
+        <div class="cog-hud-item">
+          <span class="cog-hud-icon">👁️</span>
+          <span class="cog-hud-label">Pupil</span>
+          <span class="hud-cognitive-value" id="hudPupil">● 0%</span>
+        </div>
+        <div class="cog-hud-item">
+          <span class="cog-hud-icon">🙈</span>
+          <span class="cog-hud-label">Kırpma</span>
+          <span class="hud-cognitive-value" id="hudBlink">0/dk</span>
+        </div>
+        <div class="cog-hud-item">
+          <span class="cog-hud-icon">🗣️</span>
+          <span class="cog-hud-label">Baş</span>
+          <span class="hud-cognitive-value" id="hudHead">✓ Odakta</span>
+        </div>
+        <div class="cog-hud-item">
+          <span class="cog-hud-icon">🎭</span>
+          <span class="cog-hud-label">İfade</span>
+          <span class="hud-cognitive-value" id="hudEmotion">nötr</span>
+        </div>
+      </div>
       <div class="test-timer-bar" id="timerBar" style="width: 100%"></div>
     </div>
   </div>
@@ -282,6 +305,13 @@
         <div class="heatmap-container" id="resultsHeatmap">
           <canvas id="heatmapCanvas"></canvas>
           <div class="heatmap-legend"></div>
+        </div>
+      </div>
+
+      <div class="glass-card mb-20">
+        <h3 style="font-family:var(--font-display);margin-bottom:16px;">🧠 Bilişsel Analiz</h3>
+        <div id="cognitiveResults">
+          <!-- Filled by JS -->
         </div>
       </div>
 
@@ -335,7 +365,10 @@
   </div>
 
   <!-- ════════════ SCRIPTS ════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/webgazer@3.4.0/dist/webgazer.js"></script>
+  <script src="js/cognitive.js"></script>
   <script src="js/app.js"></script>
   <script src="js/calibration.js"></script>
   <script src="js/tests.js"></script>

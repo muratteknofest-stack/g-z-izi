@@ -169,6 +169,13 @@ const App = {
       // Show camera preview using the stream from webgazer
       this.setupCameraPreview();
 
+      // Initialize Cognitive Analysis Engine
+      try {
+        await Cognitive.init();
+      } catch (e) {
+        console.warn('Cognitive init warning:', e);
+      }
+
     } catch (err) {
       throw new Error('Kamera erişimi reddedildi: ' + err.message);
     }
@@ -256,6 +263,22 @@ const App = {
   onCalibrationComplete() {
     this.showScreen('testSelectScreen');
     this.showToast('Kalibrasyon tamamlandı! Testlere başlayabilirsiniz.', 'success');
+
+    // Start cognitive analysis with camera feed
+    this.startCognitiveAnalysis();
+  },
+
+  startCognitiveAnalysis() {
+    if (!Cognitive.isReady) return;
+
+    // Find the video element with camera stream
+    const cameraVideo = document.getElementById('cameraVideo');
+    const webgazerVideo = document.getElementById('webgazerVideoFeed');
+    const video = webgazerVideo || cameraVideo;
+
+    if (video && video.srcObject) {
+      Cognitive.startAnalysis(video);
+    }
   },
 
   onTestComplete(testType) {
@@ -285,6 +308,73 @@ const App = {
     this.showScreen('resultsScreen');
     Analysis.renderResults();
     HeatmapRenderer.renderCombined('heatmapCanvas');
+
+    // Render cognitive results
+    this.renderCognitiveResults();
+  },
+
+  renderCognitiveResults() {
+    const container = document.getElementById('cognitiveResults');
+    if (!container) return;
+
+    // Get aggregated cognitive results from all tests
+    const cogData = App.state.cognitiveData;
+    if (!cogData) {
+      container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Bilişsel analiz verisi bulunamadı.</p>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="cognitive-grid">
+        <div class="cognitive-card">
+          <div class="cognitive-card-icon">👁️</div>
+          <div class="cognitive-card-title">Pupillometri</div>
+          <div class="cognitive-card-value ${cogData.pupillometry.cognitiveLoadAvg > 50 ? 'high' : 'low'}">
+            Bilişsel Yük: %${cogData.pupillometry.cognitiveLoadAvg}
+          </div>
+          <div class="cognitive-card-detail">
+            Maks. genleşme: %${cogData.pupillometry.maxDilation}<br>
+            Zorluk anı (spike): ${cogData.pupillometry.cognitiveSpikes}
+          </div>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-card-icon">🙈</div>
+          <div class="cognitive-card-title">Göz Kırpma</div>
+          <div class="cognitive-card-value ${!cogData.blinkAnalysis.isNormal ? 'high' : 'low'}">
+            ${cogData.blinkAnalysis.blinkRate} kırpma/dk
+          </div>
+          <div class="cognitive-card-detail">
+            Toplam: ${cogData.blinkAnalysis.totalBlinks} kırpma<br>
+            ${cogData.blinkAnalysis.assessment}
+          </div>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-card-icon">🗣️</div>
+          <div class="cognitive-card-title">Baş Pozisyonu</div>
+          <div class="cognitive-card-value ${cogData.headPose.avoidancePercent > 20 ? 'high' : 'low'}">
+            Kaçınma: %${cogData.headPose.avoidancePercent}
+          </div>
+          <div class="cognitive-card-detail">
+            Kaçınma sayısı: ${cogData.headPose.avoidanceCount}<br>
+            Kaçınma süresi: ${cogData.headPose.avoidanceTime}sn
+          </div>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-card-icon">🎭</div>
+          <div class="cognitive-card-title">Duygu Durumu</div>
+          <div class="cognitive-card-value">
+            ${cogData.expression.dominant}
+          </div>
+          <div class="cognitive-card-detail">
+            Stres: %${cogData.expression.stressLevel}<br>
+            Yorgunluk: %${cogData.expression.fatigueLevel}
+          </div>
+        </div>
+      </div>
+    `;
   },
 
   resetAll() {

@@ -2175,3 +2175,149 @@ body.test-active {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ── Cognitive Analysis HUD ── */
+.cognitive-hud {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+  background: rgba(10, 14, 26, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 0.7rem;
+}
+
+.cog-hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+}
+
+.cog-hud-icon {
+  font-size: 1rem;
+}
+
+.cog-hud-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hud-cognitive-value {
+  font-weight: 600;
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+
+.hud-cognitive-value.low {
+  color: var(--accent-green);
+}
+
+.hud-cognitive-value.med {
+  color: var(--accent-yellow);
+}
+
+.hud-cognitive-value.high {
+  color: var(--accent-red);
+}
+
+/* ── Cognitive Results Grid ── */
+.cognitive-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.cognitive-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  transition: all var(--transition-normal);
+}
+
+.cognitive-card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+.cognitive-card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+}
+
+.cognitive-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.cognitive-card-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--accent-cyan);
+}
+
+.cognitive-card-value.high {
+  color: var(--accent-red);
+}
+
+.cognitive-card-value.low {
+  color: var(--accent-green);
+}
+
+.cognitive-card-detail {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Mobile responsive cognitive ── */
+@media (max-width: 768px) {
+  .cognitive-hud {
+    bottom: 10px;
+    left: 10px;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 0.6rem;
+  }
+
+  .cog-hud-item {
+    min-width: 40px;
+  }
+
+  .cog-hud-icon {
+    font-size: 0.8rem;
+  }
+
+  .cog-hud-label {
+    font-size: 0.5rem;
+  }
+
+  .hud-cognitive-value {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cognitive-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cognitive-hud {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+}
