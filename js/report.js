@@ -102,6 +102,56 @@ const Report = {
                 <td style="padding:10px;text-align:center;">${this.getAttentionBadge(avgMetrics.attentionLossCount)}</td>
               </tr>
               <tr>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                  <strong>🎯 Sabitleme (Fixation)</strong><br>
+                  <small style="color:#94a3b8;">I-DT Algoritması</small>
+                </td>
+                <td style="padding:10px;text-align:center;font-weight:600;">
+                  ${avgMetrics.fixationCount} adet<br>
+                  <small>Ort: ${avgMetrics.avgFixationDuration}ms</small>
+                </td>
+                <td style="padding:10px;text-align:center;">
+                  ${this.getFixationBadge(avgMetrics.avgFixationDuration)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                  <strong>⚡ Sıçrama (Saccade)</strong><br>
+                  <small style="color:#94a3b8;">Genlik & Hız</small>
+                </td>
+                <td style="padding:10px;text-align:center;font-weight:600;">
+                  ${avgMetrics.saccadeCount} adet<br>
+                  <small>${avgMetrics.avgSaccadeAmplitude}° / ${avgMetrics.avgSaccadeVelocity}°/sn</small>
+                </td>
+                <td style="padding:10px;text-align:center;">
+                  ${this.getSaccadeBadge(avgMetrics.avgSaccadeAmplitude)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                  <strong>🎯 Takip Kazancı (Gain)</strong><br>
+                  <small style="color:#94a3b8;">Göz hızı / Hedef hızı</small>
+                </td>
+                <td style="padding:10px;text-align:center;font-weight:600;">
+                  ${avgMetrics.pursuitGain}
+                </td>
+                <td style="padding:10px;text-align:center;">
+                  ${this.getPursuitBadge(avgMetrics.pursuitGain)}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                  <strong>🧭 Scanpath Entropy</strong><br>
+                  <small style="color:#94a3b8;">Bakış dağılımı homojenliği</small>
+                </td>
+                <td style="padding:10px;text-align:center;font-weight:600;">
+                  ${avgMetrics.scanpathEntropy}
+                </td>
+                <td style="padding:10px;text-align:center;">
+                  ${avgMetrics.scanpathEntropy > 0.6 ? '✅ İyi' : '⚠️ Dar odak'}
+                </td>
+              </tr>
+              <tr>
                 <td style="padding:10px;border-bottom:1px solid #f1f5f9;">Ortalama Tepki Süresi</td>
                 <td style="padding:10px;text-align:center;font-weight:600;">${avgMetrics.avgReactionTime} ms</td>
                 <td style="padding:10px;text-align:center;">—</td>
@@ -232,6 +282,36 @@ const Report = {
       `
     };
     return recs[level] || '';
+  },
+
+  getFixationBadge(duration) {
+    const norms = Analysis.results.ageNorms || { fixDuration: 260 };
+    const ratio = duration / norms.fixDuration;
+    if (ratio >= 0.7 && ratio <= 1.5) {
+      return '<span style="background:#22c55e;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">✅ Normal</span>';
+    } else if (ratio >= 0.5) {
+      return '<span style="background:#f59e0b;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">⚠️ Sınırda</span>';
+    }
+    return '<span style="background:#ef4444;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">🔴 Anormal</span>';
+  },
+
+  getSaccadeBadge(amplitude) {
+    const norms = Analysis.results.ageNorms || { saccadeAmp: 4 };
+    if (amplitude <= norms.saccadeAmp * 1.3) {
+      return '<span style="background:#22c55e;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">✅ Normal</span>';
+    } else if (amplitude <= norms.saccadeAmp * 2) {
+      return '<span style="background:#f59e0b;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">⚠️ Büyük</span>';
+    }
+    return '<span style="background:#ef4444;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">🔴 Aşırı</span>';
+  },
+
+  getPursuitBadge(gain) {
+    if (gain >= 0.8 && gain <= 1.2) {
+      return '<span style="background:#22c55e;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">✅ İdeal</span>';
+    } else if (gain >= 0.5) {
+      return '<span style="background:#f59e0b;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">⚠️ Zayıf</span>';
+    }
+    return '<span style="background:#ef4444;color:white;padding:3px 8px;border-radius:10px;font-size:0.72rem;">🔴 Yetersiz</span>';
   },
 
   getCognitiveReportSection() {

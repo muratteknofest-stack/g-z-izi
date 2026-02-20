@@ -1,168 +1,314 @@
 /* ============================================
-   GÖZ-İZİ - Isı Haritası (heatmap.js)
+   GÖZ-İZİ - Gaussian Isı Haritası (heatmap.js)
+   Kernel Density Estimation ile profesyonel 
+   ısı haritası oluşturma
    ============================================ */
 
 const HeatmapRenderer = {
+    // Color gradient stops (cool → hot)
+    COLORS: [
+        { r: 0, g: 0, b: 0, a: 0 },        // transparent
+        { r: 0, g: 0, b: 255, a: 0.4 },     // blue
+        { r: 0, g: 255, b: 255, a: 0.6 },   // cyan
+        { r: 0, g: 255, b: 0, a: 0.7 },     // green
+        { r: 255, g: 255, b: 0, a: 0.8 },   // yellow
+        { r: 255, g: 128, b: 0, a: 0.85 },  // orange
+        { r: 255, g: 0, b: 0, a: 0.9 },     // red
+    ],
+
     /**
-     * Draw a heatmap on the given canvas from gaze data
+     * Render a combined heatmap from all test results
      */
-    render(canvasId, gazeData, width, height) {
+    renderCombined(canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
 
-        canvas.width = width || canvas.parentElement.clientWidth;
-        canvas.height = height || canvas.parentElement.clientHeight;
+        const ctx = canvas.getContext('2d');
+        const container = canvas.parentElement;
+
+        // Set canvas size from container
+        const rect = container.getBoundingClientRect();
+        canvas.width = Math.max(400, rect.width);
+        canvas.height = Math.max(300, rect.width * 0.6);
+
+        // Collect all gaze data, normalized to canvas dimensions
+        const allGaze = [];
+
+        Object.keys(App.state.testResults).forEach(type => {
+            const data = App.state.testResults[type];
+            if (!data || !data.gazeData) return;
+
+            const scaleX = canvas.width / (data.canvasWidth || window.innerWidth);
+            const scaleY = canvas.height / (data.canvasHeight || window.innerHeight);
+
+            data.gazeData.forEach(g => {
+                allGaze.push({
+                    x: g.x * scaleX,
+                    y: g.y * scaleY
+                });
+            });
+        });
+
+        if (allGaze.length === 0) {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#666';
+            ctx.font = '14px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Göz verisi bulunamadı', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+
+        // Generate Gaussian heatmap
+        this.renderGaussianHeatmap(ctx, canvas.width, canvas.height, allGaze);
+
+        // Draw fixation points if available
+        this.drawFixationOverlay(ctx, canvas);
+    },
+
+    /**
+     * Render for a specific test
+     */
+    renderForTest(canvasId, testType) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const w = canvas.width;
-        const h = canvas.height;
+        const data = App.state.testResults[testType];
+        if (!data || !data.gazeData) return;
 
-        // Scale factors (gaze data was recorded at original canvas size)
-        const scaleX = w / (gazeData.canvasWidth || window.innerWidth);
-        const scaleY = h / (gazeData.canvasHeight || window.innerHeight);
+        canvas.width = Math.max(400, canvas.parentElement.getBoundingClientRect().width);
+        canvas.height = canvas.width * 0.6;
 
-        // Clear
+        const scaleX = canvas.width / (data.canvasWidth || window.innerWidth);
+        const scaleY = canvas.height / (data.canvasHeight || window.innerHeight);
+
+        const gazePoints = data.gazeData.map(g => ({
+            x: g.x * scaleX,
+            y: g.y * scaleY
+        }));
+
+        this.renderGaussianHeatmap(ctx, canvas.width, canvas.height, gazePoints);
+    },
+
+    /**
+     * Gaussian Kernel Density Estimation Heatmap
+     */
+    renderGaussianHeatmap(ctx, width, height, points) {
+        // Background
         ctx.fillStyle = '#0a0e1a';
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(0, 0, width, height);
 
-        // Create grid for accumulation
-        const gridSize = 10; // pixels per cell
-        const cols = Math.ceil(w / gridSize);
-        const rows = Math.ceil(h / gridSize);
-        const grid = new Array(cols * rows).fill(0);
+        // Grid border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+        }
+        for (let y = 0; y < height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+        }
 
-        // Accumulate gaze points into grid
-        const points = gazeData.gazeData || gazeData;
-        points.forEach(point => {
-            const gx = Math.floor((point.x * scaleX) / gridSize);
-            const gy = Math.floor((point.y * scaleY) / gridSize);
+        if (points.length === 0) return;
 
-            // Apply gaussian spread
-            const radius = 3; // cells
-            for (let dy = -radius; dy <= radius; dy++) {
-                for (let dx = -radius; dx <= radius; dx++) {
-                    const nx = gx + dx;
-                    const ny = gy + dy;
-                    if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const weight = Math.exp(-(dist * dist) / (2 * 1.5 * 1.5));
-                        grid[ny * cols + nx] += weight;
-                    }
+        // Adaptive kernel radius based on screen and data density
+        const density = points.length / (width * height);
+        const baseRadius = Math.max(20, Math.min(60, 40 / Math.sqrt(density * 10000)));
+
+        // Create density grid (lower resolution for performance)
+        const GRID_SCALE = 4; // 1 cell = 4x4 pixels
+        const gridW = Math.ceil(width / GRID_SCALE);
+        const gridH = Math.ceil(height / GRID_SCALE);
+        const densityGrid = new Float32Array(gridW * gridH);
+
+        // Accumulate Gaussian kernels
+        const sigma = baseRadius / GRID_SCALE;
+        const sigmaSquare2 = 2 * sigma * sigma;
+        const kernelRadius = Math.ceil(sigma * 3);
+
+        points.forEach(p => {
+            const gx = Math.floor(p.x / GRID_SCALE);
+            const gy = Math.floor(p.y / GRID_SCALE);
+
+            const startX = Math.max(0, gx - kernelRadius);
+            const endX = Math.min(gridW - 1, gx + kernelRadius);
+            const startY = Math.max(0, gy - kernelRadius);
+            const endY = Math.min(gridH - 1, gy + kernelRadius);
+
+            for (let y = startY; y <= endY; y++) {
+                for (let x = startX; x <= endX; x++) {
+                    const dx = x - gx;
+                    const dy = y - gy;
+                    const dist2 = dx * dx + dy * dy;
+                    const weight = Math.exp(-dist2 / sigmaSquare2);
+                    densityGrid[y * gridW + x] += weight;
                 }
             }
         });
 
-        // Find max value
-        let maxVal = 0;
-        for (let i = 0; i < grid.length; i++) {
-            if (grid[i] > maxVal) maxVal = grid[i];
+        // Find max density for normalization
+        let maxDensity = 0;
+        for (let i = 0; i < densityGrid.length; i++) {
+            if (densityGrid[i] > maxDensity) maxDensity = densityGrid[i];
         }
-        if (maxVal === 0) maxVal = 1;
 
-        // Create image data
-        const imageData = ctx.createImageData(w, h);
+        if (maxDensity === 0) return;
 
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                const gx = Math.floor(x / gridSize);
-                const gy = Math.floor(y / gridSize);
-                const val = grid[gy * cols + gx] || 0;
-                const normalized = val / maxVal;
+        // Render density grid to canvas
+        const imageData = ctx.createImageData(width, height);
+        const data = imageData.data;
 
-                const [r, g, b, a] = this.getHeatColor(normalized);
+        for (let gy = 0; gy < gridH; gy++) {
+            for (let gx = 0; gx < gridW; gx++) {
+                const normalizedValue = densityGrid[gy * gridW + gx] / maxDensity;
+                if (normalizedValue < 0.01) continue; // Skip near-zero
 
-                const idx = (y * w + x) * 4;
-                imageData.data[idx] = r;
-                imageData.data[idx + 1] = g;
-                imageData.data[idx + 2] = b;
-                imageData.data[idx + 3] = a;
+                const color = this.getGradientColor(normalizedValue);
+
+                // Paint GRID_SCALE × GRID_SCALE block
+                for (let dy = 0; dy < GRID_SCALE && (gy * GRID_SCALE + dy) < height; dy++) {
+                    for (let dx = 0; dx < GRID_SCALE && (gx * GRID_SCALE + dx) < width; dx++) {
+                        const px = gx * GRID_SCALE + dx;
+                        const py = gy * GRID_SCALE + dy;
+                        const idx = (py * width + px) * 4;
+
+                        // Alpha blending over existing dark background
+                        const alpha = color.a;
+                        data[idx] = Math.round(10 * (1 - alpha) + color.r * alpha);
+                        data[idx + 1] = Math.round(14 * (1 - alpha) + color.g * alpha);
+                        data[idx + 2] = Math.round(26 * (1 - alpha) + color.b * alpha);
+                        data[idx + 3] = 255;
+                    }
+                }
             }
         }
 
         ctx.putImageData(imageData, 0, 0);
 
-        // Apply blur for smoother look
+        // Add subtle glow effect via canvas compositing
+        ctx.globalCompositeOperation = 'screen';
         ctx.filter = 'blur(8px)';
-        ctx.drawImage(canvas, 0, 0);
-        ctx.filter = 'none';
-
-        // Re-draw slightly transparent to lighten the blur
         ctx.globalAlpha = 0.3;
-        ctx.drawImage(canvas, 0, 0);
+        ctx.drawImage(ctx.canvas, 0, 0);
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'source-over';
         ctx.globalAlpha = 1;
+
+        // Draw color scale legend
+        this.drawLegend(ctx, width, height);
     },
 
     /**
-     * Color mapping: normalized value 0-1 -> RGBA
+     * Interpolate gradient color from normalized value 0..1
      */
-    getHeatColor(value) {
-        if (value < 0.01) return [10, 14, 26, 255]; // Background
+    getGradientColor(t) {
+        const stops = this.COLORS;
+        const pos = t * (stops.length - 1);
+        const i = Math.floor(pos);
+        const f = pos - i;
 
-        let r, g, b;
-        const alpha = Math.min(255, value * 255 + 50);
+        if (i >= stops.length - 1) return stops[stops.length - 1];
 
-        if (value < 0.25) {
-            // Blue to Cyan
-            const t = value / 0.25;
-            r = 0;
-            g = Math.floor(t * 180);
-            b = Math.floor(59 + t * 150);
-        } else if (value < 0.5) {
-            // Cyan to Green
-            const t = (value - 0.25) / 0.25;
-            r = 0;
-            g = Math.floor(180 + t * 75);
-            b = Math.floor(209 - t * 209);
-        } else if (value < 0.75) {
-            // Green to Yellow
-            const t = (value - 0.5) / 0.25;
-            r = Math.floor(t * 245);
-            g = 255;
-            b = 0;
-        } else {
-            // Yellow to Red
-            const t = (value - 0.75) / 0.25;
-            r = 245;
-            g = Math.floor(255 - t * 200);
-            b = 0;
-        }
+        const c1 = stops[i];
+        const c2 = stops[i + 1];
 
-        return [r, g, b, alpha];
+        return {
+            r: c1.r + (c2.r - c1.r) * f,
+            g: c1.g + (c2.g - c1.g) * f,
+            b: c1.b + (c2.b - c1.b) * f,
+            a: c1.a + (c2.a - c1.a) * f
+        };
     },
 
     /**
-     * Render combined heatmap from all tests
+     * Draw fixation points as circles on the heatmap
      */
-    renderCombined(canvasId) {
-        const allGaze = [];
-        let cw = window.innerWidth;
-        let ch = window.innerHeight;
+    drawFixationOverlay(ctx, canvas) {
+        const allFixations = [];
+        const results = Analysis.results.fixations || {};
 
-        Object.keys(App.state.testResults).forEach(testType => {
-            const result = App.state.testResults[testType];
-            if (result && result.gazeData) {
-                allGaze.push(...result.gazeData);
-                cw = result.canvasWidth || cw;
-                ch = result.canvasHeight || ch;
-            }
+        Object.keys(results).forEach(type => {
+            const data = App.state.testResults[type];
+            if (!data) return;
+
+            const scaleX = canvas.width / (data.canvasWidth || window.innerWidth);
+            const scaleY = canvas.height / (data.canvasHeight || window.innerHeight);
+
+            (results[type] || []).forEach(f => {
+                allFixations.push({
+                    x: f.x * scaleX,
+                    y: f.y * scaleY,
+                    duration: f.duration
+                });
+            });
         });
 
-        if (allGaze.length > 0) {
-            this.render(canvasId, {
-                gazeData: allGaze,
-                canvasWidth: cw,
-                canvasHeight: ch
-            });
+        if (allFixations.length === 0) return;
+
+        // Find max duration for sizing
+        const maxDur = Math.max(...allFixations.map(f => f.duration));
+
+        allFixations.forEach(f => {
+            const radius = 3 + (f.duration / maxDur) * 12;
+
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        });
+
+        // Draw scanpath lines between fixations
+        if (allFixations.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(allFixations[0].x, allFixations[0].y);
+            for (let i = 1; i < allFixations.length; i++) {
+                ctx.lineTo(allFixations[i].x, allFixations[i].y);
+            }
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([3, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
         }
     },
 
     /**
-     * Render heatmap for a specific test
+     * Draw color scale legend on heatmap
      */
-    renderForTest(canvasId, testType) {
-        const result = App.state.testResults[testType];
-        if (result) {
-            this.render(canvasId, result);
-        }
+    drawLegend(ctx, w, h) {
+        const legendW = 120;
+        const legendH = 12;
+        const x = w - legendW - 15;
+        const y = h - legendH - 20;
+
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(x - 8, y - 18, legendW + 16, legendH + 32);
+
+        // Label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = '9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Bakış Yoğunluğu', x + legendW / 2, y - 5);
+
+        // Gradient bar
+        const grd = ctx.createLinearGradient(x, y, x + legendW, y);
+        grd.addColorStop(0, 'rgba(0, 0, 255, 0.6)');
+        grd.addColorStop(0.25, 'rgba(0, 255, 255, 0.7)');
+        grd.addColorStop(0.5, 'rgba(0, 255, 0, 0.7)');
+        grd.addColorStop(0.75, 'rgba(255, 255, 0, 0.8)');
+        grd.addColorStop(1, 'rgba(255, 0, 0, 0.9)');
+
+        ctx.fillStyle = grd;
+        ctx.fillRect(x, y, legendW, legendH);
+
+        // Labels
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.font = '8px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Az', x, y + legendH + 10);
+        ctx.textAlign = 'right';
+        ctx.fillText('Çok', x + legendW, y + legendH + 10);
     }
 };

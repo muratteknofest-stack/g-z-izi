@@ -2321,3 +2321,106 @@ body.test-active {
     padding: 6px 10px;
   }
 }
+
+/* ── Advanced Analysis Section ── */
+.advanced-section {
+  margin-bottom: 8px;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.advanced-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adv-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.adv-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  font-family: var(--font-display);
+}
+
+.adv-norm {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+/* ── Time Series ── */
+.ts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ts-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ts-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  min-width: 60px;
+  font-weight: 600;
+}
+
+.ts-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 1;
+  height: 44px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ts-bar {
+  flex: 1;
+  min-width: 6px;
+  max-width: 20px;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+}
+
+.ts-trend {
+  font-size: 0.68rem;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Mobile responsive for advanced ── */
+@media (max-width: 768px) {
+  .advanced-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .ts-row {
+    flex-wrap: wrap;
+  }
+
+  .ts-bars {
+    height: 32px;
+  }
+}
