@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description"
-    content="Göz-İzi (Eye-Track): Webcam tabanlı göz takibi ile otizm ve öğrenme güçlüğü için erken tanı asistanı. TEKNOFEST 2026">
+    content="Göz-İzi: Raspberry Pi NoIR kamera ve IR LED aydınlatma ile göz takibi yaparak otizm ve öğrenme güçlüğü için erken tanı asistanı. TEKNOFEST 2026">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
@@ -42,25 +42,30 @@
 
       <h1 class="app-title">Göz-İzi</h1>
       <p class="app-subtitle">
-        Webcam tabanlı göz takibi teknolojisi ile çocuklarda odaklanma ve dikkat bozukluklarının erken tespitine
-        yardımcı olan, yapay zeka destekli tarama aracı.
+        Raspberry Pi NoIR kamera ve kızılötesi LED aydınlatma sistemi ile çocuklarda göz bebeği takibi yaparak odaklanma
+        ve dikkat bozukluklarının erken tespitine yardımcı olan, donanım + yapay zeka destekli tarama sistemi.
       </p>
 
-      <div class="features-grid">
+      <div class="features-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 600px;">
         <div class="feature-card">
-          <span class="feature-icon">📹</span>
-          <div class="feature-title">Webcam Tabanlı</div>
-          <div class="feature-desc">Pahalı cihaz gerektirmez, standart kamera yeterli</div>
+          <span class="feature-icon">🔧</span>
+          <div class="feature-title">Raspberry Pi</div>
+          <div class="feature-desc">Düşük maliyetli, taşınabilir gömülü sistem donanımı</div>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🔴</span>
+          <div class="feature-title">NoIR + IR LED</div>
+          <div class="feature-desc">Kızılötesi kamera ile karanlıkta bile net göz bebeği takibi</div>
         </div>
         <div class="feature-card">
           <span class="feature-icon">🧠</span>
           <div class="feature-title">Yapay Zeka</div>
-          <div class="feature-desc">Görüntü işleme ile göz bebeği takibi</div>
+          <div class="feature-desc">Görüntü işleme ile gerçek zamanlı göz bebeği analizi</div>
         </div>
         <div class="feature-card">
           <span class="feature-icon">📊</span>
           <div class="feature-title">Isı Haritası</div>
-          <div class="feature-desc">Profesyonel analiz ve detaylı raporlama</div>
+          <div class="feature-desc">Profesyonel analiz, heatmap ve detaylı raporlama</div>
         </div>
       </div>
 
@@ -146,7 +151,8 @@
     <div class="calibration-container" id="calibrationArea">
       <div class="calibration-instructions" id="calibInstructions">
         <h2>🎯 Kalibrasyon</h2>
-        <p>Ekranda beliren mavi noktalara sırayla tıklayın.<br>Her noktaya tıklarken o noktaya bakın.</p>
+        <p>Ekranda beliren mavi noktalara sırayla tıklayın.<br>Her noktaya tıklarken o noktaya bakın. Kamera sizi
+          izliyor.</p>
       </div>
       <div class="calibration-progress">
         <div class="progress-bar">
